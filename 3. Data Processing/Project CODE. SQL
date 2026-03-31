@@ -1,0 +1,44 @@
+SELECT  
+        transaction_id,
+        transaction_date,
+        transaction_time,
+        transaction_qty,
+        store_id,
+        store_location,
+        product_id,
+        unit_price,
+        product_category,
+        product_type,
+        product_detail,
+        
+---Adding columns to enhance the table for better insights
+        Dayname(transaction_time) AS Day_name,
+        Monthname(transaction_date) AS Month_name,
+        Dayofmonth(transaction_date) AS Date_of_Month,
+
+        SUM(transaction_qty*unit_price) AS Revenue_per_day,
+
+CASE 
+        WHEN Dayname(transaction_date) IN ('Sun','Sat') THEN 'Weekend'
+        ELSE 'Weekday'
+END AS Day_Classification,
+--- New Column added 5 -Time buckets
+
+CASE 
+        WHEN date_format(transaction_time,'HH:mm:ss') BETWEEN '05:00:00' AND '08:59:59' THEN'01.Morning Rush'
+        WHEN date_format(transaction_time,'HH:mm:ss') BETWEEN '09:00:00' AND '11:59:59' THEN '02.Mid Morning'
+        WHEN date_format(transaction_time,'HH:mm:ss') BETWEEN '12:00:00' AND '15:59:59' THEN '03.Afternoon'
+        WHEN date_format(transaction_time,'HH:mm:ss') BETWEEN '16:00:00' AND '18:59:59' THEN '04.Afternoon Rush'
+        ELSE 'Evening'
+END AS Time_Buckets,
+---Spend per transaction or Spend Buckets
+CASE 
+        WHEN (transaction_qty*unit_price) BETWEEN 0 AND 50 THEN '01.Low'
+        WHEN (transaction_qty*unit_price) BETWEEN 50 AND 200 THEN '02. Medium'
+        WHEN (transaction_qty*unit_price) BETWEEN 200 AND 500 THEN '03. High'
+        ELSE '04. Very High'
+END AS Spend_Bucket
+
+FROM workspace.default.bright_coffee_shop_sales
+
+GROUP BY transaction_date,Dayname(transaction_date),Monthname(transaction_date),Dayofmonth(transaction_date),transaction_time,transaction_id,transaction_qty,store_id,store_location,product_id,unit_price,product_category,product_type,product_detail;
